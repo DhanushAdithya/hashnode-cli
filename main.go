@@ -27,7 +27,6 @@ func setupConfig() {
 		}
 	}
 	viper.AddConfigPath(homeDir)
-	fmt.Println("alo", viper.GetString("token"))
 	if err := viper.ReadInConfig(); err != nil {
 		exit("Unable to read config:", err)
 	}
