@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -9,17 +10,19 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "hashnode-cli",
 	Short: "Hashnode in the command line",
-	Long: `Hashnode CLI lets you read, post and surf articles seamlessly
-right from the command line`,
+	Long: `Hashnode CLI lets you read, post and surf articles seamlessly right
+from the command line`,
+}
+
+func exit(msgs ...interface{}) {
+	fmt.Println(msgs...)
+	os.Exit(1)
 }
 
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+	if err := rootCmd.Execute(); err != nil {
+		exit("Unable to execute command:", err)
 	}
 }
 
-func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
+func init() {}
