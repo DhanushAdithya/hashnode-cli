@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/viper"
@@ -53,6 +54,13 @@ func SetupConfig() {
 
 func Linkify(text, href string) string {
 	return InfoStyle.Render(fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\", href, text))
+}
+
+func Listify(list []string) string {
+	for i, v := range list {
+		list[i] = fmt.Sprintf(`"%s"`, v)
+	}
+	return fmt.Sprintf("[%s]", strings.Join(list, ","))
 }
 
 func Exit(message ...interface{}) {
