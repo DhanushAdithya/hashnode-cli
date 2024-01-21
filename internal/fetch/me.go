@@ -2,9 +2,9 @@ package fetch
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
-	"os"
+
+	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 )
 
 const me = `{ "query": "query Me { me { id username name followersCount followingsCount newPost: posts(pageSize: 1, page: 1, sortBy: DATE_PUBLISHED_ASC) { nodes { title url } } oldPost: posts(pageSize: 1, page: 1, sortBy: DATE_PUBLISHED_DESC) { nodes { title url } } } }" }`
@@ -31,23 +31,19 @@ type Me struct {
 			} `json:"oldPost"`
 		} `json:"me"`
 	} `json:"data"`
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
+	Errors []utils.Error `json:"errors"`
 }
 
 func MeResponse() Me {
 	var response Me
 	me, err := query(me)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		utils.Exit(err)
 	}
 	defer me.Close()
 	data, err := io.ReadAll(me)
 	if err := json.Unmarshal(data, &response); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		utils.Exit("Unable to parse response")
 	}
 	return response
 }

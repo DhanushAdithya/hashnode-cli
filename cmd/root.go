@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
+	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -14,15 +12,9 @@ var rootCmd = &cobra.Command{
 from the command line`,
 }
 
-func exit(msgs ...interface{}) {
-	fmt.Println(msgs...)
-	os.Exit(1)
-}
-
 func Execute() {
+	utils.SetupConfig()
 	if err := rootCmd.Execute(); err != nil {
-		exit("Unable to execute command:", err)
+		utils.Exit("Unable to execute command")
 	}
 }
-
-func init() {}

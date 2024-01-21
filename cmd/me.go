@@ -6,17 +6,13 @@ import (
 
 	"github.com/DhanushAdithya/hashnode-cli/internal/fetch"
 	"github.com/DhanushAdithya/hashnode-cli/internal/tui"
+	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8080"))
-
 func printTable(me fetch.Me) {
-	baseStyle := lipgloss.NewStyle().Padding(0, 1)
-	labelStyle := baseStyle.Copy().Foreground(lipgloss.Color("99"))
 	rows := [][]string{
 		{"NAME", me.Data.Me.Name},
 		{"USERNAME", "@" + me.Data.Me.Username},
@@ -41,27 +37,22 @@ func printTable(me fetch.Me) {
 		Rows(rows...).
 		StyleFunc(func(row, col int) lipgloss.Style {
 			if row == 2 && col == 1 {
-				return baseStyle.Copy().Foreground(lipgloss.Color("244"))
+				return utils.UsernameStyle
 			}
 			switch col {
 			case 0:
-				return labelStyle
+				return utils.LabelColStyle
 			}
-			return baseStyle
+			return utils.RowStyle
 		})
 	fmt.Println(t)
 }
 
 var meCmd = &cobra.Command{
 	Use:   "me",
-	Short: "A brief description of your command",
+	Short: "Look up your Hashnode profile",
 	Run: func(cmd *cobra.Command, args []string) {
-		if viper.GetString("token") == "" {
-			fmt.Println(
-				errorStyle.Render("No token set. Please run 'hashnode auth <token>' to set a token."),
-			)
-			return
-		}
+		utils.CheckToken()
 		var wg sync.WaitGroup
 		wg.Add(1)
 		response := make(chan struct{})
@@ -70,11 +61,10 @@ var meCmd = &cobra.Command{
 			tui.RenderLoad(response)
 		}()
 		data := fetch.MeResponse()
-		if len(data.Errors) != 0 {
+		if len(data.Errors) > 0 {
 			close(response)
 			wg.Wait()
-			fmt.Println(errorStyle.Render(data.Errors[0].Message))
-			return
+			utils.RenderAPIErrors(data.Errors)
 		}
 		close(response)
 		wg.Wait()

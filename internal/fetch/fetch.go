@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -18,13 +19,13 @@ var client = &http.Client{
 func query(query string) (io.ReadCloser, error) {
 	req, err := http.NewRequest(http.MethodPost, baseURL, strings.NewReader(query))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to create request")
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", viper.GetString("token"))
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to make request")
 	}
 	return res.Body, nil
 }
