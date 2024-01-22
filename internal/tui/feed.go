@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,6 +18,7 @@ type feedModel struct {
 	HasNext     bool
 	Posts       list.Model
 	FocusedPost postModel
+	Help        help.Model
 }
 
 type updateSelection struct {
@@ -45,6 +47,8 @@ func (m feedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.FocusedPost.ready = false
 				m.FocusedPost.width = m.Posts.Width()
 				m.FocusedPost.height = m.Posts.Height()
+				m.FocusedPost.Keys = keys
+				m.FocusedPost.Help = help.New()
 				return m, func() tea.Msg {
 					return updateSelection{
 						post: m.FocusedPost,
@@ -55,9 +59,6 @@ func (m feedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m.Posts, cmd = m.Posts.Update(msg)
-	updatedFocusPost, newCmd := m.FocusedPost.Update(msg)
-	m.FocusedPost = updatedFocusPost.(postModel)
-	cmds = append(cmds, newCmd)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
