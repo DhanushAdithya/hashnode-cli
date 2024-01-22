@@ -10,7 +10,7 @@ import (
 const feed = `{
     "query": "query Feed($first: Int!) { feed(first: $first) { edges { node { title brief publishedAt content { markdown } url readTimeInMinutes author { name } } } pageInfo { hasNextPage endCursor } } }",
     "variables": {
-        "first": 10,
+        "first": 10
     }
 }`
 

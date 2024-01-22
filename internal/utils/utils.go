@@ -25,7 +25,14 @@ var (
 	RowStyle      = lipgloss.NewStyle().Padding(0, 1)
 	UsernameStyle = RowStyle.Copy().Foreground(lipgloss.Color("244"))
 	LabelColStyle = RowStyle.Copy().Foreground(lipgloss.Color("99"))
-	ErrorCodes    = map[string]string{
+	TitleStyle    = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		// b.Left = "┤"
+		b.Right = "├"
+		return RowStyle.Copy().BorderStyle(b).Foreground(lipgloss.Color("99"))
+	}()
+
+	ErrorCodes = map[string]string{
 		"GRAPHQL_VALIDATION_FAILED": "GraphQL query is invalid.",
 		"UNAUTHENTICATED":           "No token set. Please run 'hashnode auth <token>' to set a token.",
 		"FORBIDDEN":                 "Not allowed to access this resource.",
@@ -33,6 +40,17 @@ var (
 		"NOT_FOUND":                 "Resource not found.",
 	}
 )
+
+func RenderTitle(title string, width int) string {
+	titleString := TitleStyle.Render(title)
+	if (width < 0) || (width < lipgloss.Width(titleString)) {
+		return titleString
+	}
+	// sideLength := (width - lipgloss.Width(titleString)) / 2
+	sideLength := (width - lipgloss.Width(titleString))
+	lines := strings.Repeat("─", sideLength)
+	return lipgloss.JoinHorizontal(lipgloss.Center, titleString, lines)
+}
 
 func SetupConfig() {
 	viper.SetConfigName("hashnode")

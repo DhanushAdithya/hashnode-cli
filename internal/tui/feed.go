@@ -2,7 +2,9 @@ package tui
 
 import (
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type feedModel struct {
@@ -26,24 +28,38 @@ func (m feedModel) Init() tea.Cmd {
 }
 
 func (m feedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Posts.SetSize(msg.Width, msg.Height)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			m.FocusedPost = m.Posts.SelectedItem().(postModel)
-			return m, func() tea.Msg {
-				return updateSelection{
-					post: m.FocusedPost,
+			var ok bool
+			selectedItem := m.Posts.SelectedItem()
+			if m.FocusedPost, ok = selectedItem.(postModel); ok {
+				m.FocusedPost.spinner = spinner.New()
+				m.FocusedPost.spinner.Spinner = spinner.Dot
+				m.FocusedPost.spinner.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+				m.FocusedPost.ready = false
+				m.FocusedPost.width = m.Posts.Width()
+				m.FocusedPost.height = m.Posts.Height()
+				return m, func() tea.Msg {
+					return updateSelection{
+						post: m.FocusedPost,
+					}
 				}
 			}
 		}
 	}
 
-	var cmd tea.Cmd
 	m.Posts, cmd = m.Posts.Update(msg)
-	return m, cmd
+	updatedFocusPost, newCmd := m.FocusedPost.Update(msg)
+	m.FocusedPost = updatedFocusPost.(postModel)
+	cmds = append(cmds, newCmd)
+	cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
 }
 
 func (m feedModel) View() string {
