@@ -35,16 +35,12 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
-		case "tab":
-			if m.state == feed {
-				m.state = post
-			} else {
-				m.state = feed
-			}
 		}
 	case updateSelection:
 		m.state = post
 		m.post = msg.post
+	case backMsg:
+		m.state = feed
 	}
 	switch m.state {
 	case feed:
@@ -78,6 +74,7 @@ func fetchPosts() []postModel {
 	var posts []postModel
 	for _, post := range feedResponse.Data.Feed.Edges {
 		posts = append(posts, postModel{
+			Id:        post.Node.Id,
 			Heading:   post.Node.Title,
 			Brief:     post.Node.Brief,
 			Published: post.Node.PublishedAt,

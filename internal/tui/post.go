@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 
+	"github.com/DhanushAdithya/hashnode-cli/internal/fetch"
 	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -14,6 +15,7 @@ import (
 )
 
 type postModel struct {
+	Id        string
 	Heading   string
 	Brief     string
 	Published string
@@ -30,53 +32,50 @@ type postModel struct {
 }
 
 type keyMap struct {
-	Back     key.Binding
-	Up       key.Binding
-	Down     key.Binding
-	Open     key.Binding
-	Help     key.Binding
-	Quit     key.Binding
-	Like     key.Binding
-	Comment  key.Binding
-	Bookmark key.Binding
+	Back    key.Binding
+	Up      key.Binding
+	Down    key.Binding
+	Open    key.Binding
+	Help    key.Binding
+	Quit    key.Binding
+	Like    key.Binding
+	Comment key.Binding
 }
+
+type backMsg struct{}
 
 var keys = keyMap{
 	Back: key.NewBinding(
-		key.WithKeys("esc"),
-		key.WithHelp("esc", "Back to Feed"),
+		key.WithKeys("esc", "backspace"),
+		key.WithHelp("esc/bs", "back"),
 	),
 	Up: key.NewBinding(
 		key.WithKeys("up", "k"),
-		key.WithHelp("↑/k", "Scroll up"),
+		key.WithHelp("↑/k", "up"),
 	),
 	Down: key.NewBinding(
 		key.WithKeys("down", "j"),
-		key.WithHelp("↓/j", "Scroll down"),
+		key.WithHelp("↓/j", "down"),
 	),
 	Open: key.NewBinding(
 		key.WithKeys("o"),
-		key.WithHelp("o", "Open post in browser"),
+		key.WithHelp("o", "open in browser"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),
-		key.WithHelp("?", "Show help"),
+		key.WithHelp("?", "more"),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("q"),
-		key.WithHelp("q", "Quit"),
+		key.WithHelp("q", "quit"),
 	),
 	Like: key.NewBinding(
 		key.WithKeys("l"),
-		key.WithHelp("l", "Like post"),
+		key.WithHelp("l", "like"),
 	),
 	Comment: key.NewBinding(
 		key.WithKeys("c"),
-		key.WithHelp("c", "Comment on post"),
-	),
-	Bookmark: key.NewBinding(
-		key.WithKeys("b"),
-		key.WithHelp("b", "Bookmark post"),
+		key.WithHelp("c", "comment"),
 	),
 }
 
@@ -93,13 +92,13 @@ func (m postModel) Markdown() string {
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Back}
+	return []key.Binding{k.Up, k.Down, k.Back, k.Quit, k.Help}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down},
-		{k.Open, k.Like, k.Comment, k.Bookmark},
+		{k.Open, k.Like, k.Comment},
 		{k.Help, k.Back, k.Quit},
 	}
 }
@@ -122,23 +121,31 @@ func (m postModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.Viewport.Width = m.width
-		m.Viewport.Height = m.height - 5
+		if m.Help.ShowAll {
+			m.Viewport.Height = m.height - 8
+		} else {
+			m.Viewport.Height = m.height - 5
+		}
 		m.Viewport.YPosition = 3
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, keys.Back):
-			return m, nil
+			return m, func() tea.Msg {
+				return backMsg{}
+			}
 		case key.Matches(msg, keys.Help):
 			m.Help.ShowAll = !m.Help.ShowAll
 			if m.Help.ShowAll {
-				m.Viewport.Height = m.height - 9
+				m.Keys.Help.SetHelp("?", "close help")
+				m.Viewport.Height = m.height - 8
 			} else {
+				m.Keys.Help.SetHelp("?", "more")
 				m.Viewport.Height = m.height - 5
 			}
 		case key.Matches(msg, keys.Open):
 			utils.OpenBrowser(m.URL)
 		case key.Matches(msg, keys.Like):
-			return m, nil
+			fetch.LikeResponse(m.Id)
 		case key.Matches(msg, keys.Comment):
 			return m, nil
 		case key.Matches(msg, keys.Bookmark):

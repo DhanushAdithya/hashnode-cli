@@ -37,6 +37,8 @@ func (m feedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Posts.SetSize(msg.Width, msg.Height)
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "esc":
+			return m, nil
 		case "enter":
 			var ok bool
 			selectedItem := m.Posts.SelectedItem()
