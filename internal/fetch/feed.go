@@ -58,15 +58,17 @@ var FeedTypes = []string{
 	"READING_HISTORY",
 }
 
-func FeedResponse() Feed {
+func FeedResponse(r chan struct{}) Feed {
 	var response Feed
 	feed, err := query(feed)
 	if err != nil {
+		close(r)
 		utils.Exit(err)
 	}
 	defer feed.Close()
 	data, err := io.ReadAll(feed)
 	if err := json.Unmarshal(data, &response); err != nil {
+		close(r)
 		utils.Exit("Unable to parse response")
 	}
 	return response

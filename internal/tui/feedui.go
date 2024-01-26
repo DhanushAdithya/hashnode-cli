@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"fmt"
+	"sync"
 
 	"github.com/DhanushAdithya/hashnode-cli/internal/fetch"
 	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
@@ -9,6 +9,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/viper"
 )
+
+var wg sync.WaitGroup
 
 type focusedModel int
 
@@ -66,8 +68,8 @@ func (m MainModel) View() string {
 	return ""
 }
 
-func fetchPosts() []postModel {
-	feedResponse := fetch.FeedResponse()
+func fetchPosts(r chan struct{}) []postModel {
+	feedResponse := fetch.FeedResponse(r)
 	if len(feedResponse.Errors) > 0 {
 		utils.RenderAPIErrors(feedResponse.Errors)
 	}
@@ -81,12 +83,16 @@ func fetchPosts() []postModel {
 			Author:    post.Node.Author.Name,
 			URL:       post.Node.URL,
 			Content:   post.Node.Content.Markdown,
+			ReadTime:  post.Node.ReadTimeInMinutes,
 		})
 	}
+	close(r)
+	wg.Wait()
 	return posts
 }
 
 func GetFeed() {
+	r := make(chan struct{})
 	F := feedModel{
 		FeedType:    viper.GetString("type"),
 		Tags:        viper.GetStringSlice("tags"),
@@ -95,7 +101,12 @@ func GetFeed() {
 		FocusedPost: postModel{},
 	}
 	P := postModel{}
-	posts := fetchPosts()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		RenderLoad(r)
+	}()
+	posts := fetchPosts(r)
 	if len(posts) > 0 {
 		P = posts[0]
 		var items []list.Item
@@ -103,7 +114,7 @@ func GetFeed() {
 			items = append(items, post)
 		}
 		F.Posts = list.New(items, list.NewDefaultDelegate(), 0, 0)
-		F.Posts.Title = fmt.Sprintf("Feed (%d posts)", len(posts))
+		F.Posts.Title = "Feed"
 	}
 	main := MainModel{
 		state: feed,
