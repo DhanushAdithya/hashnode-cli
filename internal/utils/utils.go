@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/viper"
@@ -33,6 +34,11 @@ var (
 		b.Right = "├"
 		return RowStyle.Copy().BorderStyle(b).Foreground(lipgloss.Color("99"))
 	}()
+	AuthorStyle = lipgloss.NewStyle().
+			Background(lipgloss.Color("99")).
+			Foreground(lipgloss.Color("#fff")).
+			Padding(0, 1).
+			MarginLeft(2)
 
 	ErrorCodes = map[string]string{
 		"GRAPHQL_VALIDATION_FAILED": "GraphQL query is invalid.",
@@ -128,4 +134,32 @@ func OpenBrowser(url string) error {
 	}
 	args = append(args, url)
 	return exec.Command(cmd, args...).Start()
+}
+
+func FormatDate(date string) string {
+	parsedTime, err := time.Parse(time.RFC3339, date)
+	if err != nil {
+		Exit("Error parsing time:", err)
+	}
+	formattedDate := parsedTime.Format("Jan 2, 2006")
+	return formattedDate
+}
+
+func RenderStatusBar(width int, author string, readTime int, published string, scrollPercent float64) string {
+	name := AuthorStyle.Render(author)
+	readTimeStr := UsernameStyle.Background(lipgloss.Color("#353533")).Render(fmt.Sprintf("%d min read", readTime))
+	date := UsernameStyle.Background(lipgloss.Color("#353533")).Render(FormatDate(published))
+	scrollPercentStr := UsernameStyle.Background(lipgloss.Color("#353533")).Render(fmt.Sprintf("%3.f%%", scrollPercent*100))
+	spacer := lipgloss.NewStyle().
+		Padding(0, 1).
+		Background(lipgloss.Color("#353533")).
+		Render(strings.Repeat(" ", width-lipgloss.Width(name)-lipgloss.Width(readTimeStr)-lipgloss.Width(date)-lipgloss.Width(scrollPercentStr)-2))
+	return "\n" + lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		name,
+		readTimeStr,
+		spacer,
+		date,
+		scrollPercentStr,
+	)
 }

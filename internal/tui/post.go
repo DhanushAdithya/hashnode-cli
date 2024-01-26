@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -22,6 +23,7 @@ type postModel struct {
 	Author    string
 	URL       string
 	Content   string
+	ReadTime  int
 	Viewport  viewport.Model
 	ready     bool
 	spinner   spinner.Model
@@ -29,6 +31,7 @@ type postModel struct {
 	height    int
 	Help      help.Model
 	Keys      keyMap
+	Comment   textarea.Model
 }
 
 type keyMap struct {
@@ -103,6 +106,20 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	}
 }
 
+func (m postModel) StatusMsg() string {
+	return utils.RenderStatusBar(
+		m.width,
+		m.Author,
+		m.ReadTime,
+		m.Published,
+		m.Viewport.ScrollPercent(),
+	)
+}
+
+func (m postModel) RenderComment() string {
+	return ""
+}
+
 func (m postModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
@@ -111,7 +128,7 @@ func (m postModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Viewport = viewport.New(m.width, m.height)
 		md, _ := glamour.Render(m.Content, "dark")
 		m.Viewport.SetContent(md)
-		m.Viewport.Height = m.height - 5
+		m.Viewport.Height = m.height - 7
 		m.Viewport.YPosition = 3
 		m.ready = true
 	}
@@ -122,14 +139,18 @@ func (m postModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.Viewport.Width = m.width
 		if m.Help.ShowAll {
-			m.Viewport.Height = m.height - 8
+			m.Viewport.Height = m.height - 10
 		} else {
-			m.Viewport.Height = m.height - 5
+			m.Viewport.Height = m.height - 7
 		}
 		m.Viewport.YPosition = 3
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, keys.Back):
+			if m.Comment.Focused() {
+				m.Comment.Blur()
+				return m, nil
+			}
 			return m, func() tea.Msg {
 				return backMsg{}
 			}
@@ -137,18 +158,18 @@ func (m postModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Help.ShowAll = !m.Help.ShowAll
 			if m.Help.ShowAll {
 				m.Keys.Help.SetHelp("?", "close help")
-				m.Viewport.Height = m.height - 8
+				m.Viewport.Height = m.height - 10
 			} else {
 				m.Keys.Help.SetHelp("?", "more")
-				m.Viewport.Height = m.height - 5
+				m.Viewport.Height = m.height - 7
 			}
 		case key.Matches(msg, keys.Open):
 			utils.OpenBrowser(m.URL)
 		case key.Matches(msg, keys.Like):
 			fetch.LikeResponse(m.Id)
 		case key.Matches(msg, keys.Comment):
-			return m, nil
-		case key.Matches(msg, keys.Bookmark):
+			// m.Comment.Focus()
+			fetch.CommentResponse(m.Id, "test")
 			return m, nil
 		}
 	}
@@ -164,7 +185,7 @@ func (m postModel) View() string {
 	if !m.ready {
 		return fmt.Sprintf("%s Loading ...", m.spinner.View())
 	}
-	var help string
-	help = m.Help.View(m.Keys)
-	return m.Markdown() + "\n\n" + lipgloss.NewStyle().MarginLeft(2).Render(help)
+	help := m.Help.View(m.Keys)
+	help = "\n" + lipgloss.NewStyle().MarginLeft(2).Render(help)
+	return lipgloss.JoinVertical(lipgloss.Left, m.Markdown(), m.StatusMsg(), help)
 }
