@@ -2,25 +2,24 @@ package fetch
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 )
 
 const feed = `{
-    "query": "query Feed($first: Int!) { feed(first: $first) { edges { node { id title brief publishedAt content { markdown } url readTimeInMinutes author { name } } } pageInfo { hasNextPage endCursor } } }",
+    "query": "query Feed($first: Int!, $after: String, $filter: FeedFilter) { feed(first: $first, after: $after, filter: $filter) { edges { node { id title brief publishedAt content { markdown } url readTimeInMinutes author { name } } } pageInfo { hasNextPage endCursor } } }",
     "variables": {
-        "first": 10
+        "first": 10,
+        "filter": {
+            "type": "%s",
+            "minReadTime": %d,
+            "maxReadTime": %d
+        },
+        "after": "%s"
     }
 }`
-
-// "after": "",
-// "filter": {
-//     "type": "%s",
-//     "tags": %s,
-//     "minReadTime": %d,
-//     "maxReadTime": %d
-// }
 
 type Node struct {
 	Id          string `json:"id"`
@@ -43,24 +42,36 @@ type Feed struct {
 			Edges []struct {
 				Node Node `json:"node"`
 			} `json:"edges"`
+			PageInfo struct {
+				HasNextPage bool   `json:"hasNextPage"`
+				EndCursor   string `json:"endCursor"`
+			} `json:"pageInfo"`
 		} `json:"feed"`
 	} `json:"data"`
 	Errors []utils.Error `json:"errors"`
 }
 
 var FeedTypes = []string{
-	"FOLLOWING",
+	"FEATURED",
 	"PERSONALIZED",
+	"FOLLOWING",
 	"RECENT",
 	"RELEVANT",
-	"FEATURED",
 	"BOOKMARKS",
 	"READING_HISTORY",
 }
 
-func FeedResponse(r chan struct{}) Feed {
+func FeedResponse(
+	r chan struct{},
+	feedType string,
+	minRead int,
+	maxRead int,
+	after string,
+) Feed {
 	var response Feed
-	feed, err := query(feed)
+	feed, err := query(
+		fmt.Sprintf(feed, feedType, minRead, maxRead, after),
+	)
 	if err != nil {
 		close(r)
 		utils.Exit(err)

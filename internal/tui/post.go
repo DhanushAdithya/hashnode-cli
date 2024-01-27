@@ -128,7 +128,7 @@ func (m postModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Viewport = viewport.New(m.width, m.height)
 		md, _ := glamour.Render(m.Content, "dark")
 		m.Viewport.SetContent(md)
-		m.Viewport.Height = m.height - 7
+		m.Viewport.Height = m.height - 5
 		m.Viewport.YPosition = 3
 		m.ready = true
 	}
@@ -139,9 +139,9 @@ func (m postModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.Viewport.Width = m.width
 		if m.Help.ShowAll {
-			m.Viewport.Height = m.height - 10
+			m.Viewport.Height = m.height - 8
 		} else {
-			m.Viewport.Height = m.height - 7
+			m.Viewport.Height = m.height - 5
 		}
 		m.Viewport.YPosition = 3
 	case tea.KeyMsg:

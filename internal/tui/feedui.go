@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/DhanushAdithya/hashnode-cli/internal/fetch"
@@ -68,8 +69,14 @@ func (m MainModel) View() string {
 	return ""
 }
 
-func fetchPosts(r chan struct{}) []postModel {
-	feedResponse := fetch.FeedResponse(r)
+func fetchPosts(
+	r chan struct{},
+	feedType string,
+	minRead int,
+	maxRead int,
+	after string,
+) ([]postModel, string) {
+	feedResponse := fetch.FeedResponse(r, feedType, minRead, maxRead, after)
 	if len(feedResponse.Errors) > 0 {
 		utils.RenderAPIErrors(feedResponse.Errors)
 	}
@@ -88,13 +95,13 @@ func fetchPosts(r chan struct{}) []postModel {
 	}
 	close(r)
 	wg.Wait()
-	return posts
+	return posts, feedResponse.Data.Feed.PageInfo.EndCursor
 }
 
 func GetFeed() {
 	r := make(chan struct{})
 	F := feedModel{
-		FeedType:    viper.GetString("type"),
+		FeedType:    strings.ToUpper(viper.GetString("type")),
 		Tags:        viper.GetStringSlice("tags"),
 		MinRead:     viper.GetInt("min-read"),
 		MaxRead:     viper.GetInt("max-read"),
@@ -106,15 +113,16 @@ func GetFeed() {
 		defer wg.Done()
 		RenderLoad(r)
 	}()
-	posts := fetchPosts(r)
+	posts, cursor := fetchPosts(r, F.FeedType, F.MinRead, F.MaxRead, "")
 	if len(posts) > 0 {
+		F.EndCursor = cursor
 		P = posts[0]
 		var items []list.Item
 		for _, post := range posts {
 			items = append(items, post)
 		}
 		F.Posts = list.New(items, list.NewDefaultDelegate(), 0, 0)
-		F.Posts.Title = "Feed"
+		F.Posts.SetShowTitle(false)
 	}
 	main := MainModel{
 		state: feed,

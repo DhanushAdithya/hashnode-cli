@@ -22,13 +22,18 @@ type Error struct {
 }
 
 var (
-	ErrorStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8080"))
-	SuccessStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#80FF80"))
-	InfoStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#8080FF"))
-	RowStyle      = lipgloss.NewStyle().Padding(0, 1)
-	UsernameStyle = RowStyle.Copy().Foreground(lipgloss.Color("244"))
-	LabelColStyle = RowStyle.Copy().Foreground(lipgloss.Color("99"))
-	TitleStyle    = func() lipgloss.Style {
+	ErrorStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8080"))
+	SuccessStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#80FF80"))
+	InfoStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#8080FF"))
+	RowStyle       = lipgloss.NewStyle().Padding(0, 1)
+	UsernameStyle  = RowStyle.Copy().Foreground(lipgloss.Color("244"))
+	LabelColStyle  = RowStyle.Copy().Foreground(lipgloss.Color("99"))
+	ActiveTabStyle = RowStyle.Copy().
+			Background(lipgloss.Color("99")).
+			Foreground(lipgloss.Color("#fff")).
+			Margin(1, 0, 0, 2)
+	InactiveTabStyle = RowStyle.Copy().Margin(1, 0, 0, 2).Background(lipgloss.Color("#353533"))
+	TitleStyle       = func() lipgloss.Style {
 		b := lipgloss.RoundedBorder()
 		// b.Left = "┤"
 		b.Right = "├"
@@ -162,4 +167,13 @@ func RenderStatusBar(width int, author string, readTime int, published string, s
 		date,
 		scrollPercentStr,
 	)
+}
+
+func FindIndex(list []string, item string) int {
+	for i, v := range list {
+		if strings.ToUpper(v) == strings.ToUpper(item) {
+			return i
+		}
+	}
+	return -1
 }
