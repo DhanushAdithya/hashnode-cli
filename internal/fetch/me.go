@@ -7,7 +7,7 @@ import (
 	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 )
 
-const me = `{ "query": "query Me { me { id username name followersCount followingsCount newPost: posts(pageSize: 1, page: 1, sortBy: DATE_PUBLISHED_ASC) { nodes { title url } } oldPost: posts(pageSize: 1, page: 1, sortBy: DATE_PUBLISHED_DESC) { nodes { title url } } } }" }`
+const me = `{ "query": "query Me { me { id username name followersCount followingsCount newPost: posts(pageSize: 1, page: 1, sortBy: DATE_PUBLISHED_ASC) { nodes { title url } } oldPost: posts(pageSize: 1, page: 1, sortBy: DATE_PUBLISHED_DESC) { nodes { title url } } publications(first: 10) { edges { node { id title } } } } }" }`
 
 type Me struct {
 	Data struct {
@@ -29,6 +29,14 @@ type Me struct {
 					URL   string `json:"url"`
 				} `json:"nodes"`
 			} `json:"oldPost"`
+			Publications struct {
+				Edges []struct {
+					Node struct {
+						ID    string `json:"id"`
+						Title string `json:"title"`
+					} `json:"node"`
+				} `json:"edges"`
+			} `json:"publications"`
 		} `json:"me"`
 	} `json:"data"`
 	Errors []utils.Error `json:"errors"`
