@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 )
@@ -14,11 +15,11 @@ const publish = `{
         "input": {
             "title": "%s",
             "contentMarkdown": "%s",
-            "tags": [],
             "coverImageOptions": {
                 "coverImageURL": "%s"
             },
-            "publicationId": "%s"
+            "publicationId": "%s",
+            "tags": %s
         }
     }
 }`
@@ -34,9 +35,15 @@ type Publish struct {
 	Errors []utils.Error `json:"errors"`
 }
 
-func PublishResponse(title, content, coverImg, publicationId string) Publish {
+func PublishResponse(title, content, coverImg, publicationId string, tags []string) Publish {
 	var response Publish
-	publish, err := query(fmt.Sprintf(publish, title, content, coverImg, publicationId))
+
+	tagsMap := []map[string]string{}
+	for _, tag := range tags {
+		tagsMap = append(tagsMap, map[string]string{"name": tag, "slug": strings.ReplaceAll(tag, " ", "-")})
+	}
+
+	publish, err := query(fmt.Sprintf(publish, title, strings.Trim(content, "\n"), coverImg, publicationId, utils.Listify(tagsMap)))
 	if err != nil {
 		utils.Exit(err)
 	}

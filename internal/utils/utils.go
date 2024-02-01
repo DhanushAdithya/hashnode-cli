@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -87,11 +89,18 @@ func Linkify(text, href string) string {
 	return InfoStyle.Render(fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\", href, text))
 }
 
-func Listify(list []string) string {
+func Listify[T any](list []T) string {
+	strList := make([]string, len(list))
 	for i, v := range list {
-		list[i] = fmt.Sprintf(`"%s"`, v)
+		switch reflect.TypeOf(v).Kind() {
+		case reflect.String:
+			strList[i] = fmt.Sprintf(`"%v"`, v)
+		case reflect.Map:
+			mapBytes, _ := json.Marshal(v)
+			strList[i] = string(mapBytes)
+		}
 	}
-	return fmt.Sprintf("[%s]", strings.Join(list, ","))
+	return fmt.Sprintf("[%s]", strings.Join(strList, ","))
 }
 
 func Exit(message ...interface{}) {
@@ -110,7 +119,7 @@ func SetToken(token string) {
 	if err := viper.WriteConfig(); err != nil {
 		Exit("Unable to set Token to config file")
 	}
-	fmt.Println(SuccessStyle.Render("Token set successfully"))
+	RenderSuccess("Token set successfully")
 }
 
 func RenderAPIErrors(errors []Error) {
@@ -122,6 +131,10 @@ func RenderAPIErrors(errors []Error) {
 		}
 	}
 	Exit()
+}
+
+func RenderSuccess(message string) {
+	fmt.Println(SuccessStyle.Render(message))
 }
 
 func OpenBrowser(url string) error {

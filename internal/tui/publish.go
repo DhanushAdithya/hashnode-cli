@@ -1,24 +1,40 @@
 package tui
 
 import (
+	"os"
+	"strings"
+	"sync"
+
 	"github.com/DhanushAdithya/hashnode-cli/internal/fetch"
 	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 	"github.com/charmbracelet/huh"
-)
-
-var (
-	title       string
-	tagsString  string
-	cover       string
-	content     string
-	publication string
+	"github.com/spf13/viper"
 )
 
 func Publish() {
+	var (
+		title       string = viper.GetString("title")
+		tagsString  string = strings.Join(viper.GetStringSlice("tags"), ",")
+		cover       string = viper.GetString("cover-image")
+		publication string = viper.GetString("publicationId")
+	)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	response := make(chan struct{})
+	go func() {
+		defer wg.Done()
+		RenderLoad(response)
+	}()
+
 	me := fetch.MeResponse()
 	if len(me.Errors) > 0 {
+		close(response)
+		wg.Wait()
 		utils.RenderAPIErrors(me.Errors)
 	}
+	close(response)
+	wg.Wait()
 
 	var publications []huh.Option[string]
 
@@ -51,4 +67,28 @@ func Publish() {
 	if err := form.Run(); err != nil {
 		utils.Exit(err)
 	}
+
+	wg.Add(1)
+	response2 := make(chan struct{})
+	go func() {
+		defer wg.Done()
+		RenderLoad(response2)
+	}()
+
+	content, err := os.ReadFile(viper.GetString("file"))
+	if err != nil {
+		utils.Exit("Unable to read file:", viper.GetString("file"), "\nError:", err)
+	}
+	tags := strings.Split(tagsString, ",")
+
+	publish := fetch.PublishResponse(title, string(content), cover, publication, tags)
+	if len(publish.Errors) > 0 {
+		close(response2)
+		wg.Wait()
+		utils.RenderAPIErrors(publish.Errors)
+	}
+	close(response2)
+	wg.Wait()
+
+	utils.RenderSuccess("Post published successfully!")
 }
