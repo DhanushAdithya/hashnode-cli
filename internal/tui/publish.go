@@ -117,7 +117,7 @@ func postArticle() {
 	}
 	tags := strings.Split(tagsString, ",")
 
-	publish := fetch.PublishResponse(title, string(content), cover, publication, tags)
+	publish := fetch.PublishResponse(title, strings.TrimSpace(string(content)), cover, publication, tags)
 	if len(publish.Errors) > 0 {
 		close(response)
 		wg.Wait()
