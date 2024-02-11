@@ -13,17 +13,22 @@ import (
 
 var wg sync.WaitGroup
 
-type focusedModel int
+type (
+	focusedModel int
+	initSearch   struct{}
+)
 
 const (
 	feed focusedModel = iota
 	post
+	search
 )
 
 type MainModel struct {
-	state focusedModel
-	feed  tea.Model
-	post  tea.Model
+	state  focusedModel
+	feed   tea.Model
+	post   tea.Model
+	search tea.Model
 }
 
 func (m MainModel) Init() tea.Cmd {
@@ -34,10 +39,25 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.search, cmd = m.search.Update(msg)
+		cmds = append(cmds, cmd)
+		m.post, cmd = m.post.Update(msg)
+		cmds = append(cmds, cmd)
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "ctrl+c":
+		case "q":
+			if m.state != search {
+				return m, tea.Quit
+			}
+		case "ctrl+c":
 			return m, tea.Quit
+		case "s":
+			if m.state != search {
+				m.state = search
+				m.search, _ = m.search.Update(initSearch{})
+				return m, nil
+			}
 		}
 	case updateSelection:
 		m.state = post
@@ -54,6 +74,10 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		postuh, newCmd := m.post.Update(msg)
 		m.post = postuh
 		cmd = newCmd
+	case search:
+		searchuh, newCmd := m.search.Update(msg)
+		m.search = searchuh
+		cmd = newCmd
 	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
@@ -65,6 +89,8 @@ func (m MainModel) View() string {
 		return m.feed.View()
 	case post:
 		return m.post.View()
+	case search:
+		return m.search.View()
 	}
 	return ""
 }
@@ -78,6 +104,7 @@ func fetchPosts(
 ) ([]postModel, string) {
 	feedResponse := fetch.FeedResponse(r, feedType, minRead, maxRead, after)
 	if len(feedResponse.Errors) > 0 {
+		close(r)
 		utils.RenderAPIErrors(feedResponse.Errors)
 	}
 	var posts []postModel
@@ -108,6 +135,7 @@ func GetFeed() {
 		FocusedPost: postModel{},
 	}
 	P := postModel{}
+	S := searchModel{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -125,9 +153,10 @@ func GetFeed() {
 		F.Posts.SetShowTitle(false)
 	}
 	main := MainModel{
-		state: feed,
-		feed:  F,
-		post:  P,
+		state:  feed,
+		feed:   F,
+		post:   P,
+		search: S.initSearchModel(),
 	}
 	p := tea.NewProgram(main, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {

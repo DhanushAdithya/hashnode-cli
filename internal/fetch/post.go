@@ -8,6 +8,34 @@ import (
 	"github.com/DhanushAdithya/hashnode-cli/internal/utils"
 )
 
+const postQuery = `{
+    "query": "query Post($id: ID!) { post(id: $id) { id title brief publishedAt content { markdown } url readTimeInMinutes author { name } } }",
+    "variables": {
+        "id": "%s"
+    }
+}`
+
+type Post struct {
+	Data struct {
+		Post utils.Post `json:"post"`
+	} `json:"data"`
+	Errors []utils.Error `json:"errors"`
+}
+
+func PostResponse(postID string) Post {
+	var response Post
+	post, err := query(fmt.Sprintf(postQuery, postID))
+	if err != nil {
+		utils.Exit(err)
+	}
+	defer post.Close()
+	data, err := io.ReadAll(post)
+	if err := json.Unmarshal(data, &response); err != nil {
+		utils.Exit("Unable to parse response")
+	}
+	return response
+}
+
 const like = `{
     "query": "mutation LikePost($input: LikePostInput!) { likePost(input: $input) { post { id } } }",
     "variables": {

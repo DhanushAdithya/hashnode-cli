@@ -23,6 +23,21 @@ type Error struct {
 	} `json:"extensions"`
 }
 
+type Post struct {
+	Id          string `json:"id"`
+	Title       string `json:"title"`
+	Brief       string `json:"brief"`
+	PublishedAt string `json:"publishedAt"`
+	Author      struct {
+		Name string `json:"name"`
+	} `json:"author"`
+	URL               string `json:"url"`
+	ReadTimeInMinutes int    `json:"readTimeInMinutes"`
+	Content           struct {
+		Markdown string `json:"markdown"`
+	} `json:"content"`
+}
+
 var (
 	ErrorStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8080"))
 	SuccessStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#80FF80"))
@@ -114,8 +129,12 @@ func CheckToken() {
 	}
 }
 
-func SetToken(token string) {
-	viper.Set("token", token)
+func SetToken(token string, isSearchToken bool) {
+	if isSearchToken {
+		viper.Set("search-token", token)
+	} else {
+		viper.Set("token", token)
+	}
 	if err := viper.WriteConfig(); err != nil {
 		Exit("Unable to set Token to config file")
 	}

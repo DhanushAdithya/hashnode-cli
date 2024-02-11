@@ -144,5 +144,4 @@ func (m feedModel) View() string {
 	}
 	types := lipgloss.JoinHorizontal(lipgloss.Left, styledTypes...)
 	return lipgloss.JoinVertical(lipgloss.Top, types, m.Posts.View())
-	// return m.Posts.View()
 }

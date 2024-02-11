@@ -21,26 +21,11 @@ const feed = `{
     }
 }`
 
-type Node struct {
-	Id          string `json:"id"`
-	Title       string `json:"title"`
-	Brief       string `json:"brief"`
-	PublishedAt string `json:"publishedAt"`
-	Author      struct {
-		Name string `json:"name"`
-	} `json:"author"`
-	URL               string `json:"url"`
-	ReadTimeInMinutes int    `json:"readTimeInMinutes"`
-	Content           struct {
-		Markdown string `json:"markdown"`
-	} `json:"content"`
-}
-
 type Feed struct {
 	Data struct {
 		Feed struct {
 			Edges []struct {
-				Node Node `json:"node"`
+				Node utils.Post `json:"node"`
 			} `json:"edges"`
 			PageInfo struct {
 				HasNextPage bool   `json:"hasNextPage"`
